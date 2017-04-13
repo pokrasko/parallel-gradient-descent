@@ -1,4 +1,4 @@
-package ru.pokrasko.parallelgradientdescent.common;
+package ru.pokrasko.pgd.common;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,12 +18,16 @@ public class GradientDescent {
     public static double pointGradient(int coordIndex, List<Double> weights, Point point) {
         assert coordIndex >= 0 && coordIndex < weights.size();
 
-        double coord = (coordIndex != point.coords.size()) ? point.coords.get(coordIndex) : 1;
+        double coord = (coordIndex != point.coords.size()) ? point.coords.get(coordIndex) : 1.0;
         return residual(weights, point) * coord;
     }
 
-    public static boolean checkConvergence(double oldCostFunction, double newCostFunction) {
-        return Math.abs(newCostFunction - oldCostFunction) < CONVERGENCE_DIFFERENCE;
+    public static boolean checkConvergence(double oldCostFunction, double newCostFunction, double convergence) {
+        return Math.abs(newCostFunction - oldCostFunction) < convergence;
+    }
+
+    public static int dimensiality(List<Point> points) {
+        return points.get(0).coords.size();
     }
 
     public static void printWeights(List<Double> weights) {
@@ -36,12 +40,13 @@ public class GradientDescent {
     }
 
     public static double costFunction(List<Double> weights, List<Point> points) {
-        double residualSum = 0;
+        double residualSquareSum = 0;
         for (Point point : points) {
-            residualSum += residual(weights, point);
+            double residual = residual(weights, point);
+            residualSquareSum += residual * residual;
         }
 
-        return residualSum / points.size();
+        return residualSquareSum / points.size();
     }
 
     private static double residual(List<Double> weights, Point point) {
@@ -56,7 +61,7 @@ public class GradientDescent {
         return expectedValue - point.value;
     }
 
-    private static double dotProduct(List<Double> xs, List<Double> ys) {
+    public static double dotProduct(List<Double> xs, List<Double> ys) {
         return zipWith(xs, ys, (x, y) -> x * y).stream().reduce(0.0, Double::sum);
     }
 

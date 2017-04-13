@@ -1,4 +1,4 @@
-package ru.pokrasko.parallelgradientdescent.common;
+package ru.pokrasko.pgd.common;
 
 import java.util.List;
 

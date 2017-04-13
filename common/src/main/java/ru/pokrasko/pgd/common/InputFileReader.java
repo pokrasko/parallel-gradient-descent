@@ -1,4 +1,4 @@
-package ru.pokrasko.parallelgradientdescent.common;
+package ru.pokrasko.pgd.common;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -23,6 +23,7 @@ public class InputFileReader {
     private void parsePoints() throws IOException {
         points = new ArrayList<>();
         String line;
+        Integer dimensionality = null;
 
         while ((line = reader.readLine()) != null) {
             line = line.trim();
@@ -39,10 +40,26 @@ public class InputFileReader {
                         throw new IOException("Wrong double while parsing a point: " + numberString);
                     }
                 }
+                begin = end + 1;
+            }
+            String lastNumberString = line.substring(begin, line.length());
+            if (!lastNumberString.isEmpty()) {
+                try {
+                    coords.add(Double.parseDouble(lastNumberString));
+                } catch (NumberFormatException e) {
+                    throw new IOException("Wrong double while parsing a point: " + lastNumberString);
+                }
             }
 
             try {
                 Double value = coords.remove(coords.size() - 1);
+
+                if (dimensionality == null) {
+                    dimensionality = coords.size();
+                } else if (coords.size() != dimensionality) {
+                    throw new IOException("All points should have the same dimensionality");
+                }
+
                 points.add(new Point(coords, value));
             } catch (IndexOutOfBoundsException e) {
                 throw new IOException("Empty line while parsing points");
