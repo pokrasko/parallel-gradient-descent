@@ -5,8 +5,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 
 public class GradientDescent {
-    private static final double CONVERGENCE_DIFFERENCE = 1.0;
-
     public static double updateGradientStep(List<Double> oldWeights, List<Double> newWeights,
                                             List<Double> oldGradient, List<Double> newGradient) {
         return Math.abs(

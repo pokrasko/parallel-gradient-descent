@@ -5,12 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InputFileReader {
-    private BufferedReader reader;
-
+    private DataInputStream stream;
     private List<Point> points;
 
     public InputFileReader(File inputFile) throws FileNotFoundException {
-        this.reader = new BufferedReader(new FileReader(inputFile));
+        this.stream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
     }
 
     public List<Point> getPoints() throws IOException {
@@ -21,49 +20,29 @@ public class InputFileReader {
     }
 
     private void parsePoints() throws IOException {
-        points = new ArrayList<>();
-        String line;
-        Integer dimensionality = null;
+        try {
+            long startTime = System.currentTimeMillis();
 
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-            int begin = 0;
-            int end;
-            List<Double> coords = new ArrayList<>();
+            int size = stream.readInt();
+            int dimensiality = stream.readInt();
 
-            while ((end = line.indexOf(" ", begin)) != -1) {
-                String numberString = line.substring(begin, end);
-                if (!numberString.isEmpty()) {
-                    try {
-                        coords.add(Double.parseDouble(numberString));
-                    } catch (NumberFormatException e) {
-                        throw new IOException("Wrong double while parsing a point: " + numberString);
-                    }
+            points = new ArrayList<>(size);
+            for (int i = 0; i < size; i++) {
+                List<Double> coords = new ArrayList<>(dimensiality);
+                for (int j = 0; j < dimensiality; j++) {
+                    coords.add(stream.readDouble());
                 }
-                begin = end + 1;
-            }
-            String lastNumberString = line.substring(begin, line.length());
-            if (!lastNumberString.isEmpty()) {
-                try {
-                    coords.add(Double.parseDouble(lastNumberString));
-                } catch (NumberFormatException e) {
-                    throw new IOException("Wrong double while parsing a point: " + lastNumberString);
-                }
+                points.add(new Point(coords, stream.readDouble()));
             }
 
             try {
-                Double value = coords.remove(coords.size() - 1);
-
-                if (dimensionality == null) {
-                    dimensionality = coords.size();
-                } else if (coords.size() != dimensionality) {
-                    throw new IOException("All points should have the same dimensionality");
-                }
-
-                points.add(new Point(coords, value));
-            } catch (IndexOutOfBoundsException e) {
-                throw new IOException("Empty line while parsing points");
+                stream.readByte();
+                throw new IOException();
+            } catch (EOFException ignored) {
+                System.out.printf("Input parsing finished (%d ms)\n", System.currentTimeMillis() - startTime);
             }
+        } finally {
+            stream.close();
         }
     }
 }

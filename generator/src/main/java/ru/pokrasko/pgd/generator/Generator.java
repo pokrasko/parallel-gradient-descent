@@ -2,9 +2,8 @@ package ru.pokrasko.pgd.generator;
 
 import ru.pokrasko.pgd.common.GradientDescent;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -15,7 +14,7 @@ public class Generator {
     private static final double MAX_WEIGHT = 100.0;
     private static final double MAX_COORD = 100.0;
 
-    private PrintWriter writer;
+    private DataOutputStream stream;
 
     private final int size;
     private int dimensiality;
@@ -24,7 +23,7 @@ public class Generator {
 
     private Generator(File inputFile, int size, int dimensiality, double maxWeight, double maxCoord)
             throws FileNotFoundException {
-        this.writer = new PrintWriter(inputFile);
+        this.stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(inputFile)));
         this.size = size;
         this.dimensiality = dimensiality;
         this.maxWeight = maxWeight;
@@ -47,10 +46,14 @@ public class Generator {
             new Generator(new File(args[0]), size, maxDimensiality, maxWeight, maxCoord).generate();
         } catch (FileNotFoundException e) {
             System.err.println("Could not create a file: " + e.getMessage());
+        } catch (IOException e) {
+            System.err.println("IO exception happened while writing to the file: " + e.getLocalizedMessage());
         }
     }
 
-    private void generate() {
+    private void generate() throws IOException {
+        long startTime = System.currentTimeMillis();
+
         Random random = new Random();
         if (dimensiality == -1) {
             dimensiality = random.nextInt(MAX_DIMENSIALITY - 1) + 1;
@@ -58,22 +61,31 @@ public class Generator {
         List<Double> weights = random.doubles(dimensiality + 1, 0.0, maxWeight)
                 .mapToObj(x -> x).collect(Collectors.toList());
 
-        for (int i = 0; i < size; i++) {
-            if (i != 0) {
-                writer.println();
+        try {
+            stream.writeInt(size);
+            stream.writeInt(dimensiality);
+
+            for (int i = 0; i < size; i++) {
+                List<Double> coords = new ArrayList<>(dimensiality);
+                for (int j = 0; j < dimensiality; j++) {
+                    double coord = (random.nextDouble() - 0.5) * 2 * maxCoord;
+                    coords.add(coord);
+                    stream.writeDouble(coord);
+                }
+                stream.writeDouble(getValue(weights, coords));
             }
 
-            List<Double> coords = random.doubles(dimensiality, -maxCoord, maxCoord)
-                    .mapToObj(x -> x).collect(Collectors.toList());
-            double value = getValue(weights, coords);
-            writer.print(coords.stream().map(Object::toString).collect(Collectors.joining(" ")) + " " + value);
+            System.out.printf("Input generating finished (%d ms)\n", System.currentTimeMillis() - startTime);
+            System.out.println();
+
+            System.out.println("There are " + dimensiality + " dimensions, " + SIZE + " points");
+            double constantWeight = weights.remove(weights.size() - 1);
+            System.out.println("Features weights: "
+                    + weights.stream().map(Object::toString).collect(Collectors.joining(" ")));
+            System.out.println("Constant weight: " + constantWeight);
+        } finally {
+            stream.close();
         }
-
-        writer.flush();
-        writer.close();
-
-        System.out.println("There are " + dimensiality + " dimensions, " + SIZE + " points");
-        System.out.println("Weights are: " + weights.stream().map(Object::toString).collect(Collectors.joining(" ")));
     }
 
     private static double getValue(List<Double> weights, List<Double> coords) {
@@ -89,6 +101,7 @@ public class Generator {
         System.err.println("Usage: generator <input-file>");
         System.err.println("       generator <input-file> <point-amount>");
         System.err.println("       generator <input-file> <point-amount> <max-dimensiality>");
-        System.err.println("       generator <input-file> <point-amount> <max-dimensiality> <max-absolute-weight> <max-absolute-coord>");
+        System.err.println("       generator <input-file> <point-amount> <max-dimensiality> <max-absolute-weight>" +
+                " <max-absolute-coord>");
     }
 }

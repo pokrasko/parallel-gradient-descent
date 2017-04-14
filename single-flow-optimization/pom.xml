@@ -17,6 +17,12 @@
             <artifactId>common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>ru.pokrasko.demo</groupId>
+            <artifactId>generator</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

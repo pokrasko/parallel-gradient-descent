@@ -37,6 +37,8 @@ public class SingleFlowOptimizer extends AbstractVerticle {
             List<Double> newGradients = null;
             double newCostFunction = GradientDescent.costFunction(newWeights, points);
 
+            int t = 0;
+            long startTime = System.currentTimeMillis();
             do {
                 oldGradients = newGradients;
                 newGradients = new ArrayList<>();
@@ -62,9 +64,15 @@ public class SingleFlowOptimizer extends AbstractVerticle {
 
                 oldCostFunction = newCostFunction;
                 newCostFunction = GradientDescent.costFunction(newWeights, points);
+                t++;
             } while (!GradientDescent.checkConvergence(oldCostFunction, newCostFunction, convergence));
 
+            System.out.printf("Optimizing finished (%d ms)\n", System.currentTimeMillis() - startTime);
+            System.out.println();
+
+            System.out.println("Amount of iterations: " + t);
             GradientDescent.printWeights(newWeights);
+
             future.complete();
         } catch (Exception e) {
             future.fail(e);
