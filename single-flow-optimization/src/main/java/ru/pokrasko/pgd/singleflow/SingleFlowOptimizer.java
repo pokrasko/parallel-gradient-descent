@@ -27,12 +27,12 @@ public class SingleFlowOptimizer extends AbstractVerticle {
                 throw new IllegalArgumentException("You should specify convergence value in the configuration file");
             }
 
-            long startTime = System.currentTimeMillis();
-
             List<Point> points = new InputFileReader(new File(inputFilename)).getPoints();
             List<Double> oldWeights = null;
             double oldCostFunction;
             List<Double> oldGradient;
+
+            long startTime = System.currentTimeMillis();
 
             List<Double> newWeights = new ArrayList<>(Collections.nCopies(GradientDescent.dimensiality(points) + 1,
                     1.0));

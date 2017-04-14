@@ -1,0 +1,5 @@
+{
+  "input": "input.data",
+  "slaves": 10,
+  "convergence": 0.000001
+}

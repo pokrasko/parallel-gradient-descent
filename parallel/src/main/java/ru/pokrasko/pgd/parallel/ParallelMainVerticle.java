@@ -39,8 +39,7 @@ public class ParallelMainVerticle extends AbstractVerticle {
     private List<Double> oldWeights;
     private List<Double> newWeights;
     private Double costFunction;
-    private List<Double> oldGradient;
-    private List<Double> newGradient;
+    private List<Double> gradient;
 
     private List<Double> partialCostFunctions;
     private List<List<Double>> partialGradients;
@@ -51,18 +50,18 @@ public class ParallelMainVerticle extends AbstractVerticle {
         this.future = future;
 
         try {
-            convergence = config().getDouble(CONVERGENCE_PARAMETER_NAME);
-            if (convergence == null) {
-                throw new IllegalArgumentException("You should specify convergence value in the configuration file");
-            }
-
             String inputFilename = config().getString(INPUT_PARAMETER_NAME);
             if (inputFilename == null) {
                 throw new IllegalArgumentException("You should specify input file name in the configuration file");
             }
             List<Point> points = new InputFileReader(new File(inputFilename)).getPoints();
+
             size = points.size();
             dimensiality = GradientDescent.dimensiality(points);
+            convergence = config().getDouble(CONVERGENCE_PARAMETER_NAME);
+            if (convergence == null) {
+                throw new IllegalArgumentException("You should specify convergence value in the configuration file");
+            }
 
             slavesNumber = config().getInteger(SLAVES_PARAMETER_NAME);
             if (slavesNumber == null) {
@@ -72,7 +71,7 @@ public class ParallelMainVerticle extends AbstractVerticle {
                     ? size / slavesNumber
                     : size / slavesNumber + 1;
 
-            readiness = new ArrayList<>(Collections.nCopies(points.size(), false));
+            readiness = new ArrayList<>(Collections.nCopies(size, false));
             EventBus eventBus = vertx.eventBus();
             eventBus.consumer(READINESS_MESSAGE_ADDRESS, message -> checkReadiness((int) message.body()));
             eventBus.consumer(LOCAL_SUMS_MESSAGE_ADDRESS, message ->
@@ -113,6 +112,7 @@ public class ParallelMainVerticle extends AbstractVerticle {
         if (partialGradients.set(message.slaveId, message.localGradient) == null) {
             partialCostFunctions.set(message.slaveId, message.localCostFunction);
             if (++partialReceivedNumber == slavesNumber) {
+                partialReceivedNumber = 0;
                 updateWeights();
             }
         }
@@ -128,11 +128,11 @@ public class ParallelMainVerticle extends AbstractVerticle {
         }
         iterations++;
 
-        oldGradient = newGradient;
-        newGradient = sumUpGradient();
+        List<Double> oldGradient = gradient;
+        gradient = sumUpGradient();
 
         double gradientStep = oldWeights != null
-                ? GradientDescent.updateGradientStep(oldWeights, newWeights, oldGradient, newGradient)
+                ? GradientDescent.updateGradientStep(oldWeights, newWeights, oldGradient, gradient)
                 : 1.0;
 
         partialCostFunctions = new ArrayList<>(Collections.nCopies(slavesNumber, null));
@@ -140,8 +140,8 @@ public class ParallelMainVerticle extends AbstractVerticle {
 
         oldWeights = newWeights;
         newWeights = new ArrayList<>(dimensiality + 1);
-        for (int i = 0; i < newGradient.size(); i++) {
-            newWeights.add(oldWeights.get(i) - gradientStep * newGradient.get(i));
+        for (int i = 0; i < gradient.size(); i++) {
+            newWeights.add(oldWeights.get(i) - gradientStep * gradient.get(i));
         }
         vertx.eventBus().publish(ParallelSlaveVerticle.WEIGHTS_MESSAGE_ADDRESS, weightsToJson());
     }
@@ -164,7 +164,7 @@ public class ParallelMainVerticle extends AbstractVerticle {
 
     private List<Double> sumUpGradient() {
         return partialGradients.stream().reduce(
-                new ArrayList<>(Collections.nCopies(oldGradient.size(), 0.0)),
+                new ArrayList<>(Collections.nCopies(dimensiality + 1, 0.0)),
                 (xs, ys) -> GradientDescent.zipWith(xs, ys, Double::sum)
         ).stream().map(x -> x / size).collect(Collectors.toList());
     }
