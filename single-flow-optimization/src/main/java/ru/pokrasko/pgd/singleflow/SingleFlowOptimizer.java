@@ -27,55 +27,59 @@ public class SingleFlowOptimizer extends AbstractVerticle {
                 throw new IllegalArgumentException("You should specify convergence value in the configuration file");
             }
 
+            long startTime = System.currentTimeMillis();
+
             List<Point> points = new InputFileReader(new File(inputFilename)).getPoints();
             List<Double> oldWeights = null;
-            List<Double> oldGradients;
             double oldCostFunction;
+            List<Double> oldGradient;
 
             List<Double> newWeights = new ArrayList<>(Collections.nCopies(GradientDescent.dimensiality(points) + 1,
                     1.0));
-            List<Double> newGradients = null;
             double newCostFunction = GradientDescent.costFunction(newWeights, points);
+            List<Double> newGradient = null;
 
-            int t = 0;
-            long startTime = System.currentTimeMillis();
+            int iterations = 0;
             do {
-                oldGradients = newGradients;
-                newGradients = new ArrayList<>();
+                iterations++;
+
+                oldGradient = newGradient;
+                newGradient = new ArrayList<>();
                 for (int i = 0; i < newWeights.size(); i++) {
                     final int fCoordIndex = i;
-                    final List<Double> fOldWeights = newWeights;
+                    final List<Double> fWeights = newWeights;
                     double gradientSum = points.stream()
-                            .map(point -> GradientDescent.pointGradient(fCoordIndex, fOldWeights, point))
+                            .map(point -> GradientDescent.pointGradient(fCoordIndex, fWeights, point))
                             .reduce(0.0, Double::sum);
 
-                    newGradients.add(gradientSum / points.size());
+                    newGradient.add(gradientSum / points.size());
                 }
 
-                double gradientStep = (oldWeights != null)
-                        ? GradientDescent.updateGradientStep(oldWeights, newWeights, oldGradients, newGradients)
+                double gradientStep = oldWeights != null
+                        ? GradientDescent.updateGradientStep(oldWeights, newWeights, oldGradient, newGradient)
                         : 1.0;
 
                 oldWeights = newWeights;
                 newWeights = new ArrayList<>();
-                for (int i = 0; i < newGradients.size(); i++) {
-                    newWeights.add(oldWeights.get(i) - gradientStep * newGradients.get(i));
+                for (int i = 0; i < newGradient.size(); i++) {
+                    newWeights.add(oldWeights.get(i) - gradientStep * newGradient.get(i));
                 }
 
                 oldCostFunction = newCostFunction;
                 newCostFunction = GradientDescent.costFunction(newWeights, points);
-                t++;
             } while (!GradientDescent.checkConvergence(oldCostFunction, newCostFunction, convergence));
 
             System.out.printf("Optimizing finished (%d ms)\n", System.currentTimeMillis() - startTime);
             System.out.println();
 
-            System.out.println("Amount of iterations: " + t);
+            System.out.println("Amount of iterations: " + iterations);
             GradientDescent.printWeights(newWeights);
 
             future.complete();
+            vertx.close();
         } catch (Exception e) {
             future.fail(e);
+            vertx.close();
         }
     }
 }

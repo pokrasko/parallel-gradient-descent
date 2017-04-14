@@ -71,7 +71,7 @@ public class GradientDescent {
         return zipWith(xs, ys, (x, y) -> x - y);
     }
 
-    private static <A, B, R> List<R> zipWith(List<A> x, List<B> y, BiFunction<A, B, R> function) {
+    public static <A, B, R> List<R> zipWith(List<A> x, List<B> y, BiFunction<A, B, R> function) {
         assert x.size() == y.size();
 
         List<R> result = new ArrayList<>(x.size());
