@@ -3,8 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>ru.pokrasko.demo</groupId>
-        <artifactId>parallel-gradient-descent</artifactId>
+        <groupId>ru.pokrasko.pgd</groupId>
+        <artifactId>root</artifactId>
         <version>1.0</version>
     </parent>
 
@@ -13,7 +13,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>ru.pokrasko.demo</groupId>
+            <groupId>ru.pokrasko.pgd</groupId>
             <artifactId>common</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -23,6 +23,7 @@
         <plugins>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
+                <version>3.0.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
