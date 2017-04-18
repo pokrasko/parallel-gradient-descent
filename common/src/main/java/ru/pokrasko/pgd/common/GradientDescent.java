@@ -1,8 +1,12 @@
 package ru.pokrasko.pgd.common;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 public class GradientDescent {
     public static double updateGradientStep(List<Double> oldWeights, List<Double> newWeights,
@@ -28,13 +32,23 @@ public class GradientDescent {
         return points.get(0).coords.size();
     }
 
-    public static void printWeights(List<Double> weights) {
+    public static void printWeightsToSystemOut(List<Double> weights) {
         System.out.print("Features weights:");
         for (int i = 0; i < weights.size() - 1; i++) {
             System.out.print(" " + weights.get(i));
         }
         System.out.println();
         System.out.println("Constant weight: " + weights.get(weights.size() - 1));
+    }
+
+    public static boolean printWeightsToFile(List<Double> weights, String filename) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename))) {
+            writer.write(weights.stream().map(Object::toString).collect(Collectors.joining(" ")));
+            return true;
+        } catch (IOException e) {
+            System.err.println("Couldn't print result to file: " + e.getLocalizedMessage());
+            return false;
+        }
     }
 
     public static double costFunction(List<Double> weights, List<Point> points) {

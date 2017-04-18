@@ -14,16 +14,20 @@ public class Generator {
     private static final double MAX_WEIGHT = 100.0;
     private static final double MAX_COORD = 100.0;
 
-    private DataOutputStream stream;
+    private String generatedOutputFilename;
+    private String generatedWeightsFilename;
 
     private final int size;
     private int dimensiality;
     private final double maxWeight;
     private final double maxCoord;
 
-    private Generator(File inputFile, int size, int dimensiality, double maxWeight, double maxCoord)
+    private Generator(String outputFilename, String weightsFilename,
+                     int size, int dimensiality, double maxWeight, double maxCoord)
             throws FileNotFoundException {
-        this.stream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(inputFile)));
+        this.generatedOutputFilename = outputFilename;
+        this.generatedWeightsFilename = weightsFilename;
+
         this.size = size;
         this.dimensiality = dimensiality;
         this.maxWeight = maxWeight;
@@ -31,9 +35,10 @@ public class Generator {
     }
 
     public static void main(String[] args) {
-        if (args.length != 1 && args.length != 2 && args.length != 3 && args.length != 5
+        if (args.length != 1 && args.length != 2 && args.length != 3 && args.length != 5 && args.length != 6
                 || args[0] == null || args.length > 1 && args[1] == null || args.length > 2 && args[2] == null
-                || args.length > 3 && args[3] == null || args.length > 4 && args[4] == null) {
+                || args.length > 3 && args[3] == null || args.length > 4 && args[4] == null
+                || args.length > 5 && args[5] == null) {
             usage();
             return;
         }
@@ -41,9 +46,10 @@ public class Generator {
         int maxDimensiality = (args.length > 2) ? Integer.parseInt(args[2]) : MAX_DIMENSIALITY;
         double maxWeight = (args.length > 3) ? Double.parseDouble(args[3]) : MAX_WEIGHT;
         double maxCoord = (args.length > 4) ? Double.parseDouble(args[4]) : MAX_COORD;
+        String weightFilename = (args.length > 5) ? args[5] : null;
 
         try {
-            new Generator(new File(args[0]), size, maxDimensiality, maxWeight, maxCoord).generate();
+            new Generator(args[0], weightFilename, size, maxDimensiality, maxWeight, maxCoord).generate();
         } catch (FileNotFoundException e) {
             System.err.println("Could not create a file: " + e.getMessage());
         } catch (IOException e) {
@@ -58,10 +64,11 @@ public class Generator {
         if (dimensiality == -1) {
             dimensiality = random.nextInt(MAX_DIMENSIALITY - 1) + 1;
         }
-        List<Double> weights = random.doubles(dimensiality + 1, 0.0, maxWeight)
+        List<Double> weights = random.doubles(dimensiality + 1, -maxWeight, maxWeight)
                 .mapToObj(x -> x).collect(Collectors.toList());
 
-        try {
+        try (DataOutputStream stream =
+                     new DataOutputStream(new BufferedOutputStream(new FileOutputStream(generatedOutputFilename)))) {
             stream.writeInt(size);
             stream.writeInt(dimensiality);
 
@@ -75,16 +82,41 @@ public class Generator {
                 stream.writeDouble(getValue(weights, coords));
             }
 
-            System.out.printf("Input generating finished (%d ms)\n", System.currentTimeMillis() - startTime);
-            System.out.println();
+            printInfo(weights, startTime);
+        }
+    }
 
-            System.out.println("There are " + dimensiality + " dimensions, " + SIZE + " points");
+    private void printInfo(List<Double> weights, long startTime) {
+        System.out.printf("Input generating finished (%d ms)\n", System.currentTimeMillis() - startTime);
+        System.out.println();
+
+        System.out.println("There are " + dimensiality + " dimensions, " + SIZE + " points");
+
+        if (generatedWeightsFilename != null && printWeightsToFile(weights)) {
+            System.out.printf("Weights are written into file \"%s\"\n", generatedWeightsFilename);
+        } else {
             double constantWeight = weights.remove(weights.size() - 1);
             System.out.println("Features weights: "
                     + weights.stream().map(Object::toString).collect(Collectors.joining(" ")));
             System.out.println("Constant weight: " + constantWeight);
-        } finally {
-            stream.close();
+        }
+
+        System.out.println();
+        System.out.println();
+    }
+
+    private boolean printWeightsToFile(List<Double> weights) {
+        try (PrintWriter writer = new PrintWriter(generatedWeightsFilename)) {
+            writer.print(weights.stream().map(Object::toString).collect(Collectors.joining(" ")));
+            if (writer.checkError()) {
+                System.err.printf("Could not write weights to file \"%s\"\n", generatedWeightsFilename);
+                return false;
+            } else {
+                return true;
+            }
+        } catch (FileNotFoundException e) {
+            System.err.printf("Could not write weights to file \"%s\": %s\n", generatedWeightsFilename, e);
+            return false;
         }
     }
 

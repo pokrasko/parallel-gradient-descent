@@ -6,28 +6,31 @@ import ru.pokrasko.pgd.common.GradientDescent;
 import ru.pokrasko.pgd.common.InputFileReader;
 import ru.pokrasko.pgd.common.Point;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class SingleFlowOptimizer extends AbstractVerticle {
-    private static final String INPUT_PARAMETER_NAME = "input";
-    private static final String CONVERGENCE_PARAMETER_NAME = "convergence";
+    public static final String INPUT_CONFIG_KEY = "input";
+    public static final String OUTPUT_CONFIG_KEY = "output";
+    public static final String CONVERGENCE_CONFIG_KEY = "convergence";
+
+    private String outputFilename;
 
     @Override
     public void start(Future<Void> future) throws Exception {
         try {
-            String inputFilename = config().getString(INPUT_PARAMETER_NAME);
+            String inputFilename = config().getString(INPUT_CONFIG_KEY);
             if (inputFilename == null) {
                 throw new IllegalArgumentException("You should specify input file name in the configuration file");
             }
-            Double convergence = config().getDouble(CONVERGENCE_PARAMETER_NAME);
+            outputFilename = config().getString(OUTPUT_CONFIG_KEY);
+            Double convergence = config().getDouble(CONVERGENCE_CONFIG_KEY);
             if (convergence == null) {
                 throw new IllegalArgumentException("You should specify convergence value in the configuration file");
             }
 
-            List<Point> points = new InputFileReader(new File(inputFilename)).getPoints();
+            List<Point> points = new InputFileReader(inputFilename).getPoints();
             List<Double> oldWeights = null;
             double oldCostFunction;
             List<Double> oldGradient;
@@ -68,12 +71,7 @@ public class SingleFlowOptimizer extends AbstractVerticle {
                 oldCostFunction = newCostFunction;
                 newCostFunction = GradientDescent.costFunction(newWeights, points);
             } while (!GradientDescent.checkConvergence(oldCostFunction, newCostFunction, convergence));
-
-            System.out.printf("Optimizing finished (%d ms)\n", System.currentTimeMillis() - startTime);
-            System.out.println();
-
-            System.out.println("Amount of iterations: " + iterations);
-            GradientDescent.printWeights(newWeights);
+            printResult(newWeights, startTime, iterations);
 
             future.complete();
             vertx.close();
@@ -81,5 +79,21 @@ public class SingleFlowOptimizer extends AbstractVerticle {
             future.fail(e);
             vertx.close();
         }
+    }
+
+    private void printResult(List<Double> weights, long startTime, int iterations) {
+        System.out.printf("Optimizing finished (%d ms)\n", System.currentTimeMillis() - startTime);
+        System.out.println();
+
+        System.out.println("Amount of iterations: " + iterations);
+
+        if (outputFilename != null && GradientDescent.printWeightsToFile(weights, outputFilename)) {
+            System.out.printf("Results are written into file \"%s\"\n", outputFilename);
+        } else {
+            GradientDescent.printWeightsToSystemOut(weights);
+        }
+
+        System.out.println();
+        System.out.println();
     }
 }

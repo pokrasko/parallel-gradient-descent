@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InputFileReader {
-    private DataInputStream stream;
+    private String inputFilename;
     private List<Point> points;
 
-    public InputFileReader(File inputFile) throws FileNotFoundException {
-        this.stream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
+    public InputFileReader(String inputFilename) throws FileNotFoundException {
+        this.inputFilename = inputFilename;
     }
 
     public List<Point> getPoints() throws IOException {
@@ -20,7 +20,8 @@ public class InputFileReader {
     }
 
     private void parsePoints() throws IOException {
-        try {
+        try (DataInputStream stream =
+                     new DataInputStream(new BufferedInputStream(new FileInputStream(inputFilename)))) {
             long startTime = System.currentTimeMillis();
 
             int size = stream.readInt();
@@ -41,8 +42,6 @@ public class InputFileReader {
             } catch (EOFException ignored) {
                 System.out.printf("Input parsing finished (%d ms)\n", System.currentTimeMillis() - startTime);
             }
-        } finally {
-            stream.close();
         }
     }
 }

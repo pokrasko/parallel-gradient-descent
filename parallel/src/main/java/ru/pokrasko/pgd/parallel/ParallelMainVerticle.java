@@ -9,16 +9,16 @@ import ru.pokrasko.pgd.common.GradientDescent;
 import ru.pokrasko.pgd.common.InputFileReader;
 import ru.pokrasko.pgd.common.Point;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ParallelMainVerticle extends AbstractVerticle {
-    private static final String INPUT_PARAMETER_NAME = "input";
-    private static final String SLAVES_PARAMETER_NAME = "slaves";
-    private static final String CONVERGENCE_PARAMETER_NAME = "convergence";
+    public static final String INPUT_CONFIG_KEY = "input";
+    public static final String OUTPUT_CONFIG_KEY = "output";
+    public static final String SLAVES_CONFIG_KEY = "slaves";
+    public static final String CONVERGENCE_CONFIG_KEY = "convergence";
 
     static final String READINESS_MESSAGE_ADDRESS = "ready";
     static final String LOCAL_SUMS_MESSAGE_ADDRESS = "local-sums";
@@ -26,6 +26,7 @@ public class ParallelMainVerticle extends AbstractVerticle {
     private Future<Void> future;
     private long startTime;
     private int iterations;
+    private String outputFilename;
 
     private Integer slavesNumber;
 
@@ -50,20 +51,21 @@ public class ParallelMainVerticle extends AbstractVerticle {
         this.future = future;
 
         try {
-            String inputFilename = config().getString(INPUT_PARAMETER_NAME);
+            String inputFilename = config().getString(INPUT_CONFIG_KEY);
             if (inputFilename == null) {
                 throw new IllegalArgumentException("You should specify input file name in the configuration file");
             }
-            List<Point> points = new InputFileReader(new File(inputFilename)).getPoints();
+            outputFilename = config().getString(OUTPUT_CONFIG_KEY);
+            List<Point> points = new InputFileReader(inputFilename).getPoints();
 
             size = points.size();
             dimensiality = GradientDescent.dimensiality(points);
-            convergence = config().getDouble(CONVERGENCE_PARAMETER_NAME);
+            convergence = config().getDouble(CONVERGENCE_CONFIG_KEY);
             if (convergence == null) {
                 throw new IllegalArgumentException("You should specify convergence value in the configuration file");
             }
 
-            slavesNumber = config().getInteger(SLAVES_PARAMETER_NAME);
+            slavesNumber = config().getInteger(SLAVES_CONFIG_KEY);
             if (slavesNumber == null) {
                 throw new IllegalArgumentException("You should specify the slaves number in the configuration file");
             }
@@ -152,7 +154,15 @@ public class ParallelMainVerticle extends AbstractVerticle {
 
         System.out.printf("%d computing verticles were used\n", slavesNumber);
         System.out.println("Amount of iterations: " + iterations);
-        GradientDescent.printWeights(newWeights);
+
+        if (outputFilename != null && GradientDescent.printWeightsToFile(newWeights, outputFilename)) {
+            System.out.printf("Results are written into file \"%s\"\n", outputFilename);
+        } else {
+            GradientDescent.printWeightsToSystemOut(newWeights);
+        }
+
+        System.out.println();
+        System.out.println();
 
         future.complete();
         vertx.close();
