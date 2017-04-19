@@ -8,7 +8,7 @@
         <version>1.0</version>
     </parent>
 
-    <artifactId>single-flow-optimization</artifactId>
+    <artifactId>single-flow</artifactId>
     <packaging>jar</packaging>
 
     <dependencies>

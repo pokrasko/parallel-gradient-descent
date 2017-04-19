@@ -10,7 +10,7 @@
     <modules>
         <module>common</module>
         <module>generator</module>
-        <module>single-flow-optimization</module>
+        <module>single-flow</module>
         <module>parallel</module>
     </modules>
 

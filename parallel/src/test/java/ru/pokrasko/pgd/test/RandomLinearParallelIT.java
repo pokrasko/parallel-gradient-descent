@@ -6,7 +6,6 @@ import io.vertx.core.VertxOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.VertxUnitRunner;
 import io.vertx.ext.unit.junit.VertxUnitRunnerWithParametersFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
