@@ -23,12 +23,12 @@ Configuration parameters:
 To run it use
 ```sh
 mvn clean package
-java -jar single-flow-optimization/target/single-flow-optimization-1.0-fat.jar -conf <configuration-file>
+java -jar single-flow/target/single-flow-1.0-fat.jar -conf <configuration-file>
 ```
 or
 ```sh
 mvn clean package
-vertx run ru.pokrasko.pgd.singleflow.SingleFlowOptimizer -cp single-flow-optimization/target/single-flow-optimization-1.0-fat.jar -conf <configuration-file>
+vertx run ru.pokrasko.pgd.singleflow.SingleFlowOptimizer -cp single-flow/target/single-flow-1.0-fat.jar -conf <configuration-file>
 ```
 
 ## Parallel implementation
@@ -46,9 +46,9 @@ Configuration parameters:
 To run it use
 ```sh
 mvn clean package
-java -jar parallel-optimization/target/parallel-optimization-1.0-fat.jar -conf <configuration-file>
+java -jar parallel/target/parallel-1.0-fat.jar -conf <configuration-file>
 ```
 or
 ```sh
 mvn clean package
-vertx run ru.pokrasko.pgd.singleflow.SingleFlowOptimizer -cp single-flow-optimization/target/single-flow-optimization-1.0-fat.jar -conf <configuration-file>
+vertx run ru.pokrasko.pgd.parallel.ParallelMainVerticle -cp parallel/target/parallel-1.0-fat.jar -conf <configuration-file>
